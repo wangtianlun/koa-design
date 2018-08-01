@@ -66,6 +66,8 @@ X-Forwarded-Host请求头用于标识源请求主机，这个头部字段可以�
 
 接下来实例app通过use方法加载了一个中间件函数，这里我们打印出了一句“hello koa”. 我们接下来看看use方法的定义
 
+## use方法
+
 ```javascript
   use(fn) {
     if (typeof fn !== 'function') throw new TypeError('middleware must be a function!');
@@ -87,6 +89,8 @@ use函数接收一个中间件函数作为参数，首先判断fn的类型，如
 
 再回到我们的示例，接下来实例app调用了listen方法，传递了一个端口和一个回调函数，我们来看看在源码中listen方法的实现
 
+## listen方法
+
 ```javascript
   listen(...args) {
     debug('listen');
@@ -106,6 +110,8 @@ debug方法先不用看，主要看第二行，这里调用了原生http模块�
 ```
 
 那么我猜想，这个this.callback()一定会返回一个类似于(req, res) => { ... }的函数，接下来我们来看看callback函数的定义
+
+## callback方法
 
 ```javascript
   callback() {
@@ -147,11 +153,27 @@ debug方法先不用看，主要看第二行，这里调用了原生http模块�
     console.log('app is running on port 3000')
   })
 ```
+接下来定义了handleRequest函数，函数接收req请求对象以及res响应对象，函数里首先调用了createContext方法，并将req和res传入，我们来看看createContext函数的定义
 
-控制台上打印的结果就为
+## createContext
 
-
-
+```javascript
+  createContext(req, res) {
+    const context = Object.create(this.context);
+    const request = context.request = Object.create(this.request);
+    const response = context.response = Object.create(this.response);
+    context.app = request.app = response.app = this;
+    context.req = request.req = response.req = req;
+    context.res = request.res = response.res = res;
+    request.ctx = response.ctx = context;
+    request.response = response;
+    response.request = request;
+    context.originalUrl = request.originalUrl = req.url;
+    context.state = {};
+    return context;
+  }
+```
+首先分别定义了三个变量，context, request, response，以context为例，通过Object.create这种创建对象的方式，使context变量的__proto__属性指向this.context对象，request以及response同理，同时将this.request和this.response挂载到了context.request和context.response的__proto__属性上。接下来又将Koa实例本身，req对象，res对象挂载到了context，request和response上。使各自都有了相互访问的途径。然后将请求进来的url赋值给context和request上面的originalUrl属性上，并在context上定义了state属性，最后将包装好的context返回
 
 
 
