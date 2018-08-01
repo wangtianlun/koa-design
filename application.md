@@ -175,7 +175,20 @@ debug方法先不用看，主要看第二行，这里调用了原生http模块�
 ```
 首先分别定义了三个变量，context, request, response，以context为例，通过Object.create这种创建对象的方式，使context变量的__proto__属性指向this.context对象，request以及response同理，同时将this.request和this.response挂载到了context.request和context.response的__proto__属性上。接下来又将Koa实例本身，req对象，res对象挂载到了context，request和response上。使各自都有了相互访问的途径。然后将请求进来的url赋值给context和request上面的originalUrl属性上，并在context上定义了state属性，最后将包装好的context返回
 
-回到callback函数
+回到callback函数，接下来函数直接返回了this.handleRequest(ctx, fn)， 我们来看一下handleRequest的定义
+
+## handleRequest
+
+```javascript
+  handleRequest(ctx, fnMiddleware) {
+    const res = ctx.res;
+    res.statusCode = 404;
+    const onerror = err => ctx.onerror(err);
+    const handleResponse = () => respond(ctx);
+    onFinished(res, onerror);
+    return fnMiddleware(ctx).then(handleResponse).catch(onerror);
+  }
+```
 
 
 
