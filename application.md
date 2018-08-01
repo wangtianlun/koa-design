@@ -60,6 +60,10 @@ X-Forwarded-Host请求头用于标识源请求主机，这个头部字段可以�
   X-Forwarded-Host: id42.example-cdn.com
 ```
 
+用Object.create这种方式生成了三个对象，分别赋值给实例的context，request，response属性。那么这三个属性对象的__proto__属性就指向了context，request，response对象。 这三个对象后面会详细介绍
+
+
+
 
 
 
