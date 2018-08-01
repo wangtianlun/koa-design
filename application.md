@@ -81,14 +81,74 @@ X-Forwarded-Host请求头用于标识源请求主机，这个头部字段可以�
   }
 ```
 
-use函数接收一个中间件函数作为参数，首先判断fn的类型，如果不是function类型，则会抛出一个类型错误，在koa2里，要求中间件为普通函数或者async函数，如果传入了一个用generator函数实现的中间件，需要用koa-convert这个转换一下。所以use函数的第二行就对fn函数进行了是否为generator函数的判断，这里引入了一个“is-generator-function”包用作判断方法. 包地址为[is-generator-function](https://github.com/ljharb/is-generator-function), 判断如果为generator函数，则会给出一个不推荐使用的提示。
+use函数接收一个中间件函数作为参数，首先判断fn的类型，如果不是function类型，则会抛出一个类型错误，在koa2里，要求中间件为普通函数或者async函数，如果传入了一个用generator函数(function*)实现的中间件，需要用koa-convert这个转换一下。所以use函数的第二行就对fn函数进行了是否为generator函数的判断，这里引入了一个“is-generator-function”包用作判断方法. 包地址为[is-generator-function](https://github.com/ljharb/is-generator-function), 判断如果为generator函数，则会给出一个不推荐使用的提示。
 
 进行过判断之后，就将fn添加到实例的middleware数组中，并返回自身
 
 再回到我们的示例，接下来实例app调用了listen方法，传递了一个端口和一个回调函数，我们来看看在源码中listen方法的实现
 
+```javascript
+  listen(...args) {
+    debug('listen');
+    const server = http.createServer(this.callback());
+    return server.listen(...args);
+  }
+```
 
+debug方法先不用看，主要看第二行，这里调用了原生http模块的createServer方法，里面传递了this.callback()这个函数的执行结果，在用原生nodejs来创建server时，我们会这样写
 
+```javascript
+  const server = http.createServer((req, res) => {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'text/plain');
+    res.end('Hello World\n');
+  });
+```
+
+那么我猜想，这个this.callback()一定会返回一个类似于(req, res) => { ... }的函数，接下来我们来看看callback函数的定义
+
+```javascript
+  callback() {
+    const fn = compose(this.middleware);
+
+    if (!this.listenerCount('error')) this.on('error', this.onerror);
+
+    const handleRequest = (req, res) => {
+      const ctx = this.createContext(req, res);
+      return this.handleRequest(ctx, fn);
+    };
+
+    return handleRequest;
+  }
+```
+
+果然如我们预期的那样，callback函数会返回handleRequest, 而handleRequest函数的定义就形如(req, res) => { ... }这种格式，首先来看第一行，调用了compose方法并传入了实例中的middleware数组，compose方法是通过[koa-compose](https://github.com/koajs/compose/blob/master/index.js)这个包暴露出来的，它接收中间件数组，并返回一个中间件函数，在中间件函数中会依次执行middleware数组中的中间件函数，这个koa-compose包会在之后详细介绍，回到callback函数, 因为Koa类继承自events模块，所有Koa的实例就会有listenerCount这个函数，这个函数是用来获取指定事件在该实例上所绑定的数量。
+
+我们可以在我们的示例上添加上这几句，来验证一下这个方法的使用
+
+```javascript
+  const Koa = require('koa')
+  const app = new Koa()
+
+  app.on('custom', () => {
+    console.log('event1')
+  })
+
+  app.on('custom', () => {
+    console.log('event2')
+  })
+
+  app.use((ctx) => {
+    console.log(app.listenerCount('custom'))  // 2
+    console.log('hello koa')
+  })
+
+  app.listen(3000, () => {
+    console.log('app is running on port 3000')
+  })
+```
+
+控制台上打印的结果就为
 
 
 
