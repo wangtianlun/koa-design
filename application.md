@@ -64,6 +64,29 @@ X-Forwarded-Host请求头用于标识源请求主机，这个头部字段可以�
 
 ![https://github.com/wangtianlun/koa-design/blob/master/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202018-08-01%20%E4%B8%8A%E5%8D%8811.26.20.png](https://github.com/wangtianlun/koa-design/blob/master/%E5%B1%8F%E5%B9%95%E5%BF%AB%E7%85%A7%202018-08-01%20%E4%B8%8A%E5%8D%8811.26.20.png)
 
+接下来实例app通过use方法加载了一个中间件函数，这里我们打印出了一句“hello koa”. 我们接下来看看use方法的定义
+
+```javascript
+  use(fn) {
+    if (typeof fn !== 'function') throw new TypeError('middleware must be a function!');
+    if (isGeneratorFunction(fn)) {
+      deprecate('Support for generators will be removed in v3. ' +
+                'See the documentation for examples of how to convert old middleware ' +
+                'https://github.com/koajs/koa/blob/master/docs/migration.md');
+      fn = convert(fn);
+    }
+    debug('use %s', fn._name || fn.name || '-');
+    this.middleware.push(fn);
+    return this;
+  }
+```
+
+use函数接收一个中间件函数作为参数，首先判断fn的类型，如果不是function类型，则会抛出一个类型错误，在koa2里，要求中间件为普通函数或者async函数，如果传入了一个用generator函数实现的中间件，需要用koa-convert这个转换一下。所以use函数的第二行就对fn函数进行了是否为generator函数的判断，这里引入了一个“is-generator-function”包用作判断方法. 包地址为[is-generator-function](https://github.com/ljharb/is-generator-function), 判断如果为generator函数，则会给出一个不推荐使用的提示。
+
+进行过判断之后，就将fn添加到实例的middleware数组中，并返回自身
+
+再回到我们的示例，接下来实例app调用了listen方法，传递了一个端口和一个回调函数，我们来看看在源码中listen方法的实现
+
 
 
 
