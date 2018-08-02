@@ -190,6 +190,9 @@ debug方法先不用看，主要看第二行，这里调用了原生http模块�
   }
 ```
 
+函数内部首先获取了res对象，然后将statusCode置为了404，然后定义了错误处理函数，紧接着定义了handleResponse函数，函数体中调用了respond方法，respond方法是用来处理一系列响应操作的，稍后会进行介绍。再往下，就是调用了onFinished方法，这个onFinished方法来自[on-finished](https://github.com/jshttp/on-finished)包，作用是当http响应操作结束，发生错误，或者关闭时触发传入的监听函数，当前就是这个onerror函数，最后返回了一个promise对象. 这个fnMiddleware是一个形如function (context, next) { ... }的函数，方法执行过后就会返回一个promise对象，并且在该promise对象的then方法中传入了之前定义的用于操作响应的函数，同时添加了cache捕获。
+
+最后回到listen方法，创建完了server之后，就直接调用原生node的listen方法，并将其返回
 
 
 
