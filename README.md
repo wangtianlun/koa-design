@@ -12,3 +12,6 @@
   
   [response](https://github.com/wangtianlun/koa-design/blob/master/application.md)
 
+## 中间件
+
+  [compose](https://github.com/wangtianlun/koa-design/blob/master/middleware/koa-compose.md)
