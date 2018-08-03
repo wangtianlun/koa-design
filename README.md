@@ -14,4 +14,4 @@
 
 ## 中间件
 
-  [compose](https://github.com/wangtianlun/koa-design/blob/master/middleware/koa-compose.md)
+  * [compose](https://github.com/wangtianlun/koa-design/blob/master/middleware/koa-compose.md)
