@@ -31,6 +31,81 @@
     }
   }
 ```
+在dev函数中，首先定义了一个print函数，这个函数的作用就是打印字符串。
+
+```javascript
+  const print = (function () {
+    let transporter
+    if (typeof opts === 'function') {
+      transporter = opts
+    } else if (opts && opts.transporter) {
+      transporter = opts.transporter
+    }
+
+    return function printFunc (...args) {
+      let str = util.format(...args)
+      if (transporter) {
+        transporter(str, args)
+      } else {
+        console.log(...args)
+      }
+    }
+  }())
+```
+
+dev函数的参数为opts，我们可以向logger函数中传入一个transporter函数，并将koa-logger处理后的日志字符串和args对象传入其中，args对象包含了[format, method, url, status, time, length]，transporter函数的作用就是可以对输出字符串做一些自定义的处理，比如传入到其它可写流里面。 print函数会继续返回一个printFunc函数，在这里，如果传入了transport函数则会调用transport函数，否则会执行console.log
+
+接下来着重来看logger函数
+
+```javascript
+  return async function logger (ctx, next) {
+    // request
+    const start = Date.now()
+    print('  ' + chalk.gray('<--') +
+      ' ' + chalk.bold('%s') +
+      ' ' + chalk.gray('%s'),
+        ctx.method,
+        ctx.originalUrl)
+
+    try {
+      await next()
+    } catch (err) {
+      // log uncaught downstream errors
+      log(print, ctx, start, null, err)
+      throw err
+    }
+
+    // calculate the length of a streaming response
+    // by intercepting the stream with a counter.
+    // only necessary if a content-length header is currently not set.
+    const length = ctx.response.length
+    const body = ctx.body
+    let counter
+    if (length == null && body && body.readable) {
+      ctx.body = body
+        .pipe(counter = Counter())
+        .on('error', ctx.onerror)
+    }
+
+    // log when the response is finished or closed,
+    // whichever happens first.
+    const res = ctx.res
+
+    const onfinish = done.bind(null, 'finish')
+    const onclose = done.bind(null, 'close')
+
+    res.once('finish', onfinish)
+    res.once('close', onclose)
+
+    function done (event) {
+      res.removeListener('finish', onfinish)
+      res.removeListener('close', onclose)
+      log(print, ctx, start, counter ? counter.length : length, null, event)
+    }
+  }
+```
+
+首先定义start常亮记录请求发起的毫秒数,
 
 ## 其它函数
 
