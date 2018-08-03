@@ -2,7 +2,7 @@
 
   因为想要更好的使用koa来进行开发，所以建立了这个阅读源码的仓库
 
-## 章节
+## 主体章节
 
   [application](https://github.com/wangtianlun/koa-design/blob/master/application.md)
   
@@ -14,4 +14,8 @@
 
 ## 中间件
 
+<<<<<<< HEAD
   [compose](https://github.com/wangtianlun/koa-design/blob/master/middleware/koa-compose.md)
+=======
+  [compose](https://github.com/wangtianlun/koa-design/blob/master/middleware/koa-compose.md)
+>>>>>>> 408a87dba2fcf44496eb3e345b2143304e011311
